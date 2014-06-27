@@ -1,42 +1,69 @@
 package ee.tkasekamp.ebupcreator.parser;
 
-import java.nio.charset.Charset;
+import java.io.File;
+import java.io.IOException;
 
-import nl.siegmann.epublib.domain.Resource;
-
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
+import ee.tkasekamp.ebupcreator.data.Post;
+import ee.tkasekamp.ebupcreator.data.Thread;
+
 public class PostParser {
-	private final Charset utf8 = Charset.forName("UTF8");
+//	private String firstPage;
 
-	public Resource postParser(Element post) {
-		String href = post.getElementsByClass("postcounter").get(0).text()
-				+ ".html";
-		byte[] a = getHtmlDocForContent(post.getElementsByClass("content").get(0).html(),
-				post.getElementsByClass("postcounter").get(0).text(), null);
-		return new Resource(a, href);
+	public PostParser() {
+		super();
+	}
+
+	public Thread parseThread(String firstPage) {
+//		this.firstPage = firstPage;
+
+		Document doc = getDocument(firstPage);
+		Element contents = getPosts(doc);
+
+		Thread thread = new Thread(firstPage);
+
+		for (Element content : contents.children()) {
+			thread.getPosts().add(parsePost(content));
+		}
+
+		thread.setCreator(thread.getPosts().get(0).getUserName());
+		thread.setName(doc.title());
+
+		return thread;
+	}
+
+	private Element getPosts(Document doc) {
+
+		Element contents = doc.getElementById("posts");
+		return contents;
+	}
+
+	private Document getDocument(String page) {
+		File input = new File(page);
+		Document doc = null;
+		try {
+			doc = Jsoup.parse(input, "UTF-8");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return doc;
+	}
+
+	private Post parsePost(Element el) {
+		// TODO something about timezones
+		String date = el.getElementsByClass("date").first().text();
+		String time = el.getElementsByClass("time").first().html();
+		String postCount = el.getElementsByClass("postcounter").first().text();
+		String postLink = el.getElementsByClass("postcounter").first()
+				.attr("href");
+		String userName = el.getElementsByClass("username").first().text();
+		String content = el.getElementsByClass("content").first().outerHtml();
+		Post post = new Post(date, time, postCount, postLink, userName, content);
+		return post;
 
 	}
 
-	public Resource getHtmlForContentRes(String content, String contentTitle,
-			final String url) {
-		String href = String.format("%s.html", contentTitle);
-		return new Resource(this.getHtmlDocForContent(content, contentTitle,
-				url), href);
-	}
-
-	public byte[] getHtmlDocForContent(String content, String contentTitle,
-			String url) {
-		String doc = String
-				.format("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-						+ "<!DOCTYPE html\n"
-						+ "        PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
-						+ "        \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n"
-						+ "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n"
-						+ "<head>\n"
-						+ "    <link rel=\"stylesheet\" href=\"styles.css\" type=\"text/css\" /> "
-						+ "    <title>%s</title>\n" + "</head>\n"
-						+ "<body>%s</body>" + "</html>", contentTitle, content);
-		return doc.getBytes(utf8);
-	}
 }
