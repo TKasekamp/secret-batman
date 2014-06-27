@@ -40,7 +40,7 @@ public class ParseTest {
 		assertEquals(testpage, thread.getLink());
 		assertEquals("Polandball inspired comics - Page 803", thread.getName());
 		assertEquals("AsdfeZxcas", thread.getCreator());
-		assertEquals(16, thread.getPosts().size());
+		assertEquals(20, thread.getPosts().size());
 	}
 
 }

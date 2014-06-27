@@ -6,20 +6,20 @@ import java.io.IOException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ee.tkasekamp.ebupcreator.data.Post;
 import ee.tkasekamp.ebupcreator.data.Thread;
 
 public class PostParser {
-//	private String firstPage;
+	protected final Logger log = LoggerFactory.getLogger(getClass());
 
 	public PostParser() {
 		super();
 	}
 
 	public Thread parseThread(String firstPage) {
-//		this.firstPage = firstPage;
-
 		Document doc = getDocument(firstPage);
 		Element contents = getPosts(doc);
 
@@ -27,6 +27,7 @@ public class PostParser {
 
 		for (Element content : contents.children()) {
 			thread.getPosts().add(parsePost(content));
+			getImages(content, thread);
 		}
 
 		thread.setCreator(thread.getPosts().get(0).getUserName());
@@ -36,7 +37,6 @@ public class PostParser {
 	}
 
 	private Element getPosts(Document doc) {
-
 		Element contents = doc.getElementById("posts");
 		return contents;
 	}
@@ -64,6 +64,14 @@ public class PostParser {
 		Post post = new Post(date, time, postCount, postLink, userName, content);
 		return post;
 
+	}
+
+	private void getImages(Element el, Thread thread) {
+		for (Element img : el.getElementsByClass("content").first()
+				.getElementsByTag("img")) {
+			String link = img.attr("src");
+			thread.getImages().add(link);
+		}
 	}
 
 }
